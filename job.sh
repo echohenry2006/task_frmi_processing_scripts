@@ -10,12 +10,12 @@
 
 #$ -j y
 # Modify these to put the stdout and stderr files in the right place for your system.
-#$ -o /DATA/238/yyang/workspace/973_task/preprocessing/out
-#$ -e /DATA/238/yyang/workspace/973_task/preprocessing/out
+#$ -o /DATA/238/yyang/workspace/973_task/preprocessing_ncoreg/out
+#$ -e /DATA/238/yyang/workspace/973_task/preprocessing_ncoreg/out
 #$ -cwd
 alias matlab='/DATA/238/yyang/Software/MATLAB/R2012a/bin/matlab'
 echo "Starting job: $SGE_TASK_ID"
-cd /DATA/238/yyang/workspace/973_task/preprocessing/scripts
+cd /DATA/238/yyang/workspace/973_task/preprocessing_ncoreg/scripts
 # Modify this to use the path to matlab for your system
 matlab -nojvm -nodisplay -r batch_task
 
