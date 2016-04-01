@@ -25,8 +25,9 @@ end
 
 % Insert the matlab code you want here. Usually this will figure out
 % what to do based on the job_id then start that processing.
-preprocessing_ncoreg(job_id,'Num');
-preprocessing_ncoreg(job_id,'SPA');
+task_fmri_DESPIKE_using_Wavelets_task(job_id,'Num');
+task_fmri_DESPIKE_using_Wavelets_task(job_id,'SPA');
+
 % If we have a job ID, then exit so matlab does not sit at the command
 % prompt forever.
 if job_id ~= -1

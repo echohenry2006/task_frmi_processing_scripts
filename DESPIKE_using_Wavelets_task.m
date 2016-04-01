@@ -13,7 +13,6 @@
 
 % Set path to functional images
 clear all
-
 root = '/DATA/238/yyang/workspace/973_task/preprocessing_ncoreg';
 pathIMG  = fullfile(root,'FunImg_Num');
     

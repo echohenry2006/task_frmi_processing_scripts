@@ -13,10 +13,14 @@ function task_fmri_DESPIKE_using_Wavelets_task(sub_id,task)
 %    - prefix_SP.txt        - the spike percentage time series
 
 % Set path to functional images
-clear all
-
+addpath /DATA/238/yyang/MatlabToolbox/BrainWavelet/third_party/NIfTI
 root = '/DATA/238/yyang/workspace/973_task/preprocessing_ncoreg';
-pathIMG  = fullfile(root,'FunImg_Num');
+switch task
+case 'Num'
+	pathIMG  = fullfile(root,'FunImg_Num');
+case 'SPA'
+	pathIMG  = fullfile(root,'FunImg_SPA');
+end
     
 
     
@@ -39,5 +43,5 @@ subject      = cellstr(subject);                % make cell array (for convenien
 for i=1:num.subjects
     cd(fullfile(pathIMG,subject{sub_id}));
 	
-    WaveletDespike(strcat('swafun_Num_',subject{sub_id},'.nii'),'dswa_4D'); 
+    WaveletDespike(strcat('swafun_Num_',subject{sub_id},'.nii'),'dswa_4D','LimitRAM',8); 
 end

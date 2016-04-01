@@ -13,10 +13,11 @@
 #$ -o /DATA/238/yyang/workspace/973_task/preprocessing_ncoreg/out
 #$ -e /DATA/238/yyang/workspace/973_task/preprocessing_ncoreg/out
 #$ -cwd
+source ~/.bashrc
 alias matlab='/DATA/238/yyang/Software/MATLAB/R2012a/bin/matlab'
 echo "Starting job: $SGE_TASK_ID"
 cd /DATA/238/yyang/workspace/973_task/preprocessing_ncoreg/scripts
 # Modify this to use the path to matlab for your system
-matlab -nojvm -nodisplay -r batch_task
+matlab -nodisplay -r batch_task
 
 echo "Done with job: $SGE_TASK_ID"
