@@ -1,3 +1,4 @@
+function task_fmri_PCA_Extraction(sub_id,task,mask)
 % EXTRACT PRINCIPAL COMPONENTS FROM NOISE/WHOLE BRAIN MASK
 %
 % The following options are available:
@@ -27,12 +28,12 @@
 
 % SETUP
 % =========================================================================
-clear all
+
 
 % Options
-task = 'Num';
+%task = 'Num';
 num.PCA     = 5;
-mask        = 'NoiseROI'; % NoiseROI/WholeBrain
+%mask        = 'NoiseROI'; % NoiseROI/WholeBrain
 orth        = false;       % true/false
 orth_method = 'SPMReg';   % SPMReg/RegReg/VoxExcl
 if strcmp(orth_method,'RegReg')==1 || strcmp(orth_method,'VoxExcl')==1
@@ -69,115 +70,113 @@ subject      = cellstr(subject);               % make cell array
 % =========================================================================
 fprintf('\nPRINCIPAL COMPONENT EXTRACTION\n')
 fprintf('=========================================================================\n')
-for i=1:num.subjects
-    fprintf('Processing subject %d of %d... ',i,num.subjects);
-    % Get functional images
-    fname       = strcat('swafun_Num_',subject{i},'.nii');
-    img.P  = spm_select('ExtFPList',fullfile(path.FunImg,subject{i}),'^swafun.*.nii',7:228);
-    if i==1
-        num.scans = size(img.P,1);
-        HPF.row   = (1:num.scans);
-    end
-    % Get mask and extract time series
-    switch mask
-        case 'NoiseROI'
-            aROI.P = spm_select('FPList',path.mask,'^rAnatomicalROI.nii');
-        case 'WhiteMatter'
-            aROI.P = spm_select('FPList',path.mask,'^rWhiteMatter.nii');
-        case 'GrayMatter'
-            aROI.P = spm_select('FPList',path.mask,'^rGrayMatter.nii');
-        case 'CSF'
-            aROI.P = spm_select('FPList',path.mask,'^rCSF.nii');
-        case 'WholeBrain'
-            aROI.P = spm_select('FPList',path.mask,'^rWholeBrain.nii');
-    end
-    aROI.V                 = spm_vol(aROI.P);
-    aROI.Y                 = spm_read_vols(aROI.V);
-    aROI.idx               = find(aROI.Y~=0);
-    [aROI.x,aROI.y,aROI.z] = ind2sub(size(aROI.Y),aROI.idx);
-    aROI.xyz               = [aROI.x aROI.y aROI.z]';
-    data                   = spm_get_data(img.P,aROI.xyz); % voxel time series
-    data = zscore(data);
-    data = spm_filter(HPF,data);
-    if orth==true % Task design orthogonalization
-        switch orth_method
-            case 'SPMReg'
-                % get 1st level task SPMs
-                spms.P{1} = spm_select('FPList',fullfile(path.spm,subject{i}),'spmT_0001.nii');
-                spms.P{2} = spm_select('FPList',fullfile(path.spm,subject{i}),'spmT_0002.nii');
-                % load and reshape functional data (time by voxels)
-                img.V  = spm_vol(img.P);
-                img.Y  = spm_read_vols(img.V);
-                img.pY = permute(img.Y,[4 1 2 3]);
-                img.rY = reshape(img.pY,num.scans,[]);
-                if i==1
-                    num.spms   = length(spms.P);
-                    TaskSignal = zeros(num.scans,num.spms);
-                end
-                for j=1:num.spms
-                    spms.V  = spm_vol(spms.P(j));
-                    spms.Y  = spm_read_vols(spms.V{1,1});
-                    spms.rY = reshape(spms.Y,[],1);    % task (contrast) time course(s)
-                    TaskSignal(:,j) = spm_filter(HPF,img.rY*spms.rY); % generate task signal
-                end
-                TaskSignal = zscore(TaskSignal); % demean and variance normalize
-                
-                X = [ones(num.scans,1) TaskSignal];
-                B = inv(X'*X)*X'*data;
-                data_est = X*B;
-                data_res = data - data_est;   % data with task variance removed
-            case 'RegReg'
-                if i==1
-                    load(spm_select('FPList',fullfile(path.spm,subject{i}),'SPM.mat'));
-                    TaskSignal = spm_filter(HPF,SPM.xX.xKXs.X(:,regs));
-                end
-                TaskSignal = zscore(TaskSignal); % demean and variance normalize
-                
-                X = [ones(num.scans,1) TaskSignal];
-                B = inv(X'*X)*X'*data;
-                data_est = X*B;
-                data_res = data - data_est;   % data with task variance removed
-            case 'VoxExcl'
-                if i==1
-                    load(spm_select('FPList',fullfile(path.spm,subject{i}),'SPM.mat'));
-                    TaskSignal = spm_filter(HPF,SPM.xX.xKXs.X(:,regs));
-                end
-                [~,p]  = corr(TaskSignal,data); % correlate regressor and voxel time series
-                [~,px] = find(p<0.2);           % find voxels correlating with design regressors
-                px     = unique(px);
-                data(:,px) = [];                    % remove time series of problematic voxels
-                data_res   = data;
-                % write (new) mask of included voxels
-                aROI.Y(aROI.idx(px)) = 0;                        % Set value of problematic voxels to zero
-                aROI.fname   = regexp(aROI.V.fname,'\','split'); % get original filename (with extension) from first frame
-                aROI.V.fname = fullfile(path.mask,subject{i},...
-                    sprintf('%s_%s',prefix,aROI.fname{end})); % add prefix to filename
-                spm_write_vol(aROI.V,aROI.Y);
-        end
-    else % No task orthogonalization
-        data_res = data;
-    end
-    
-    % Extract principal components
-    [~,PCA.comp_score,PCA.comp_latent] = princomp(data_res);
-    PCA.comp_score = bsxfun(@rdivide,PCA.comp_score,std(PCA.comp_score)); % variance normalization
-    PCA.comps      = PCA.comp_score(:,1:num.PCA); % components to keep
-    PCA.latent     = PCA.comp_latent(1:num.PCA);
-    PCA.latent_sum = sum(PCA.comp_latent);
-    
-    % Save components as .mat file
-    switch mask
-        case 'NoiseROI'
-            SaveName = fullfile(path.FunImg,subject{i},sprintf('nvr_AnaPhysioPCA_%d',num.PCA));
-        case 'WhiteMatter'
-            SaveName = fullfile(path.FunImg,subject{i},sprintf('nvr_WMPhysioPCA_%d',num.PCA));
-        case 'GrayMatter'
-            SaveName = fullfile(path.FunImg,subject{i},sprintf('nvr_GMPhysioPCA_%d',num.PCA));
-        case 'CSF'
-            SaveName = fullfile(path.FunImg,subject{i},sprintf('nvr_CSFPhysioPCA_%d',num.PCA));
-    end
-    tmp      = PCA.comps;
-    save(SaveName,'tmp');
-    fprintf('Done!\n')
+
+fprintf('Processing subject %d of %d... ',sub_id,num.subjects);
+% Get functional images
+fname       = strcat('swafun_Num_',subject{sub_id},'.nii');
+img.P  = spm_select('ExtFPList',fullfile(path.FunImg,subject{sub_id}),'^swafun.*.nii',7:228);
+
+num.scans = size(img.P,1);
+HPF.row   = (1:num.scans);
+
+% Get mask and extract time series
+switch mask
+    case 'NoiseROI'
+        aROI.P = spm_select('FPList',path.mask,'^rAnatomicalROI.nii');
+    case 'WhiteMatter'
+        aROI.P = spm_select('FPList',path.mask,'^rWhiteMatter.nii');
+    case 'GrayMatter'
+        aROI.P = spm_select('FPList',path.mask,'^rGrayMatter.nii');
+    case 'CSF'
+        aROI.P = spm_select('FPList',path.mask,'^rCSF.nii');
+    case 'WholeBrain'
+        aROI.P = spm_select('FPList',path.mask,'^rWholeBrain.nii');
 end
-fprintf('\nDone!\n')
+aROI.V                 = spm_vol(aROI.P);
+aROI.Y                 = spm_read_vols(aROI.V);
+aROI.idx               = find(aROI.Y~=0);
+[aROI.x,aROI.y,aROI.z] = ind2sub(size(aROI.Y),aROI.idx);
+aROI.xyz               = [aROI.x aROI.y aROI.z]';
+data                   = spm_get_data(img.P,aROI.xyz); % voxel time series
+data = zscore(data);
+data = spm_filter(HPF,data);
+if orth==true % Task design orthogonalization
+    switch orth_method
+        case 'SPMReg'
+            % get 1st level task SPMs
+            spms.P{1} = spm_select('FPList',fullfile(path.spm,subject{sub_id}),'spmT_0001.nii');
+            spms.P{2} = spm_select('FPList',fullfile(path.spm,subject{sub_id}),'spmT_0002.nii');
+            % load and reshape functional data (time by voxels)
+            img.V  = spm_vol(img.P);
+            img.Y  = spm_read_vols(img.V);
+            img.pY = permute(img.Y,[4 1 2 3]);
+            img.rY = reshape(img.pY,num.scans,[]);
+            if i==1
+                num.spms   = length(spms.P);
+                TaskSignal = zeros(num.scans,num.spms);
+            end
+            for j=1:num.spms
+                spms.V  = spm_vol(spms.P(j));
+                spms.Y  = spm_read_vols(spms.V{1,1});
+                spms.rY = reshape(spms.Y,[],1);    % task (contrast) time course(s)
+                TaskSignal(:,j) = spm_filter(HPF,img.rY*spms.rY); % generate task signal
+            end
+            TaskSignal = zscore(TaskSignal); % demean and variance normalize
+            
+            X = [ones(num.scans,1) TaskSignal];
+            B = inv(X'*X)*X'*data;
+            data_est = X*B;
+            data_res = data - data_est;   % data with task variance removed
+        case 'RegReg'
+            if i==1
+                load(spm_select('FPList',fullfile(path.spm,subject{sub_id}),'SPM.mat'));
+                TaskSignal = spm_filter(HPF,SPM.xX.xKXs.X(:,regs));
+            end
+            TaskSignal = zscore(TaskSignal); % demean and variance normalize
+            
+            X = [ones(num.scans,1) TaskSignal];
+            B = inv(X'*X)*X'*data;
+            data_est = X*B;
+            data_res = data - data_est;   % data with task variance removed
+        case 'VoxExcl'
+            if i==1
+                load(spm_select('FPList',fullfile(path.spm,subject{sub_id}),'SPM.mat'));
+                TaskSignal = spm_filter(HPF,SPM.xX.xKXs.X(:,regs));
+            end
+            [~,p]  = corr(TaskSignal,data); % correlate regressor and voxel time series
+            [~,px] = find(p<0.2);           % find voxels correlating with design regressors
+            px     = unique(px);
+            data(:,px) = [];                    % remove time series of problematic voxels
+            data_res   = data;
+            % write (new) mask of included voxels
+            aROI.Y(aROI.idx(px)) = 0;                        % Set value of problematic voxels to zero
+            aROI.fname   = regexp(aROI.V.fname,'\','split'); % get original filename (with extension) from first frame
+            aROI.V.fname = fullfile(path.mask,subject{sub_id},...
+                sprintf('%s_%s',prefix,aROI.fname{end})); % add prefix to filename
+            spm_write_vol(aROI.V,aROI.Y);
+    end
+else % No task orthogonalization
+    data_res = data;
+end
+
+% Extract principal components
+[~,PCA.comp_score,PCA.comp_latent] = princomp(data_res);
+PCA.comp_score = bsxfun(@rdivide,PCA.comp_score,std(PCA.comp_score)); % variance normalization
+PCA.comps      = PCA.comp_score(:,1:num.PCA); % components to keep
+PCA.latent     = PCA.comp_latent(1:num.PCA);
+PCA.latent_sum = sum(PCA.comp_latent);
+
+% Save components as .mat file
+switch mask
+    case 'NoiseROI'
+        SaveName = fullfile(path.FunImg,subject{sub_id},sprintf('nvr_AnaPhysioPCA_%d',num.PCA));
+    case 'WhiteMatter'
+        SaveName = fullfile(path.FunImg,subject{sub_id},sprintf('nvr_WMPhysioPCA_%d',num.PCA));
+    case 'GrayMatter'
+        SaveName = fullfile(path.FunImg,subject{sub_id},sprintf('nvr_GMPhysioPCA_%d',num.PCA));
+    case 'CSF'
+        SaveName = fullfile(path.FunImg,subject{sub_id},sprintf('nvr_CSFPhysioPCA_%d',num.PCA));
+end
+tmp      = PCA.comps;
+save(SaveName,'tmp');
+fprintf('Done!\n')
