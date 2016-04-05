@@ -8,4 +8,13 @@
 
 
 # Modify this to set the number of jobs you want to run
-qsub -t 1-132:1 job.sh
+qsub -t 6-6:1 job.sh
+qsub -t 20-20:1 job.sh
+qsub -t 24-24:1 job.sh
+qsub -t 38-38:1 job.sh
+qsub -t 45-45:1 job.sh
+qsub -t 77-77:1 job.sh
+qsub -t 115-115:1 job.sh
+qsub -t 126-126:1 job.sh
+
+

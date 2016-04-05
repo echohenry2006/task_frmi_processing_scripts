@@ -1,0 +1,16 @@
+job-ID  prior   name       user         state submit/start at     queue                          slots ja-task-ID 
+-----------------------------------------------------------------------------------------------------------------
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 10
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic244                      1 11
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 21
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 35
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic244                      1 37
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 46
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 62
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic244                      1 63
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 78
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 94
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic244                      1 96
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 108
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic241                      1 124
+1540775 0.55500 job.sh     yyang        r     04/02/2016 10:17:00 long.q@mic244                      1 125
